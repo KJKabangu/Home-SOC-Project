@@ -1,0 +1,47 @@
+<Sysmon schemaversion="4.90">
+
+  <HashAlgorithms>SHA256</HashAlgorithms>
+
+  <EventFiltering>
+
+    <!-- Process Creation -->
+    <ProcessCreate onmatch="include" />
+
+    <!-- Network Connections -->
+    <NetworkConnect onmatch="include" />
+
+    <!-- File Creation -->
+    <FileCreate onmatch="include" />
+
+    <!-- Registry Changes -->
+    <RegistryEvent onmatch="include" />
+
+    <!-- Driver Loads -->
+    <DriverLoad onmatch="include" />
+
+    <!-- DNS Queries -->
+    <DnsQuery onmatch="include" />
+
+    <Image condition="contains">powershell.exe</Image>
+
+    <TargetImage condition="is">
+        C:\Windows\System32\lsass.exe
+    </TargetImage>
+
+
+    <NetworkConnect onmatch="include">
+    <DestinationPort condition="is">4444</DestinationPort>
+    <DestinationPort condition="is">1337</DestinationPort>
+    </NetworkConnect>
+
+    <RegistryEvent onmatch="include">
+    <TargetObject condition="contains">
+    </TargetObject>
+    </RegistryEvent>
+
+    <!-- Process Access -->
+    <ProcessAccess onmatch="include" />
+
+  </EventFiltering>
+
+</Sysmon>

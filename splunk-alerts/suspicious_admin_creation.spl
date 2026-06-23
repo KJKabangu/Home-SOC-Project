@@ -1,0 +1,2 @@
+index=main EventCode=4720
+| table _time Account_Name SubjectUserName ComputerName

@@ -460,6 +460,21 @@ Incident report templates are in [`incident-reports/`](./incident-reports/).
 
 ---
 
+## Sysmon Monitoring
+
+The Windows endpoint utilizes Sysmon to collect:
+
+- Process Creation (Event ID 1)
+- Network Connections (Event ID 3)
+- File Creation (Event ID 11)
+- Registry Changes (Event ID 13)
+- Process Access (Event ID 10)
+- DNS Queries (Event ID 22)
+
+These events are forwarded to Wazuh for analysis and ATT&CK-mapped detections.
+
+---
+
 ## 📁 Repository Structure
 
 ```
@@ -530,4 +545,3 @@ Aspiring Cybersecurity Professional | Blue Team Enthusiast
 ---
 
 *This project is built for educational purposes on an isolated home lab network.*
->>>>>>> 866307ddc12a6fc8d4bbda74fc42ed6c77889f4e

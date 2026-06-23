@@ -1,0 +1,6 @@
+index=main sourcetype=linux_secure
+("Failed password" OR "Accepted password")
+| stats count(eval(searchmatch("Failed password"))) as failures
+        count(eval(searchmatch("Accepted password"))) as successes
+        by src_ip
+| where failures > 5 AND successes > 0
