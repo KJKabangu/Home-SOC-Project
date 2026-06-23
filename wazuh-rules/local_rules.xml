@@ -1,0 +1,184 @@
+<!--
+  ============================================================
+  Home SOC Project — Custom Wazuh Detection Rules
+  Author: KJ Kabangu
+  File:   /var/ossec/etc/rules/local_rules.xml
+  
+  To activate: copy to /var/ossec/etc/rules/local_rules.xml
+  on your Wazuh manager, then run:
+    sudo systemctl restart wazuh-manager
+  
+  Test a rule:  sudo /var/ossec/bin/wazuh-logtest
+  MITRE ATT&CK: https://attack.mitre.org/
+  ============================================================
+-->
+
+<group name="local_rules,">
+
+  <!-- ============================================================
+       RULE 100001 — SSH Brute Force (Multiple Failures)
+       ATT&CK: T1110.001 - Brute Force: Password Guessing
+       Fires when 5+ SSH login failures occur within 60 seconds
+       from the same source IP.
+  ============================================================ -->
+  <rule id="100001" level="10" frequency="5" timeframe="60">
+    <if_matched_sid>5716</if_matched_sid>
+    <same_source_ip />
+    <description>SSH brute force: 5 or more failed logins in 60 seconds from $(srcip)</description>
+    <mitre>
+      <id>T1110.001</id>
+    </mitre>
+    <group>authentication_failures,brute_force,pci_dss_10.2.4,pci_dss_10.2.5,</group>
+  </rule>
+
+
+  <!-- ============================================================
+       RULE 100002 — Successful Login After Multiple Failures
+       ATT&CK: T1110.001 - Brute Force: Password Guessing
+       Fires when a successful SSH login follows prior failures
+       from the same IP — a strong indicator of credential compromise.
+  ============================================================ -->
+  <rule id="100002" level="14">
+    <if_matched_sid>100001</if_matched_sid>
+    <if_sid>5715</if_sid>
+    <same_source_ip />
+    <description>Possible successful brute force: login succeeded after repeated failures from $(srcip)</description>
+    <mitre>
+      <id>T1110.001</id>
+    </mitre>
+    <group>authentication_success,brute_force,pci_dss_10.2.4,pci_dss_10.2.5,</group>
+  </rule>
+
+
+  <!-- ============================================================
+       RULE 100003 — New Local User Account Created
+       ATT&CK: T1136.001 - Create Account: Local Account
+       Fires when useradd or adduser is run on a Linux host.
+       Attackers create backdoor accounts for persistence.
+  ============================================================ -->
+  <rule id="100003" level="8">
+    <if_sid>5901</if_sid>
+    <match>useradd|adduser</match>
+    <description>New local user account created: $(dstuser) by $(srcuser)</description>
+    <mitre>
+      <id>T1136.001</id>
+    </mitre>
+    <group>account_management,pci_dss_8.1.2,</group>
+  </rule>
+
+
+  <!-- ============================================================
+       RULE 100004 — Sudo Privilege Escalation
+       ATT&CK: T1548.003 - Abuse Elevation Control: Sudo
+       Fires when a user runs a command with sudo.
+       Tune the user list below to ignore known-good admin accounts.
+  ============================================================ -->
+  <rule id="100004" level="6">
+    <if_sid>5402</if_sid>
+    <match>sudo</match>
+    <description>Sudo command executed by $(srcuser): $(command)</description>
+    <mitre>
+      <id>T1548.003</id>
+    </mitre>
+    <group>privilege_escalation,pci_dss_10.2.5,</group>
+  </rule>
+
+  <!-- High-severity variant: sudo su or sudo -i (full root shell) -->
+  <rule id="100005" level="12">
+    <if_sid>5402</if_sid>
+    <match>sudo su|sudo -i|sudo -s|sudo bash|sudo sh</match>
+    <description>Privilege escalation to root shell via sudo by $(srcuser)</description>
+    <mitre>
+      <id>T1548.003</id>
+    </mitre>
+    <group>privilege_escalation,pci_dss_10.2.5,</group>
+  </rule>
+
+
+  <!-- ============================================================
+       RULE 100006 — Cron Job Added by Non-Root User
+       ATT&CK: T1053.003 - Scheduled Task/Job: Cron
+       Attackers use cron for persistence. Root cron changes are
+       expected; non-root user cron edits are suspicious.
+  ============================================================ -->
+  <rule id="100006" level="8">
+    <if_sid>5902</if_sid>
+    <match>crontab</match>
+    <description>Cron job modified by non-root user: $(srcuser)</description>
+    <mitre>
+      <id>T1053.003</id>
+    </mitre>
+    <group>persistence,pci_dss_10.2.5,</group>
+  </rule>
+
+
+  <!-- ============================================================
+       RULE 100007 — SSH Login from New / Unexpected Country
+       ATT&CK: T1078 - Valid Accounts (external remote services)
+       Fires on successful SSH auth from a non-local subnet.
+       Useful for flagging logins from unexpected geolocations
+       when paired with Wazuh's GeoIP integration.
+  ============================================================ -->
+  <rule id="100007" level="10">
+    <if_sid>5715</if_sid>
+    <not_same_source_ip />
+    <match>Accepted</match>
+    <description>Successful SSH login from external IP $(srcip) — verify expected</description>
+    <mitre>
+      <id>T1078</id>
+    </mitre>
+    <group>authentication_success,anomaly,</group>
+  </rule>
+
+
+  <!-- ============================================================
+       RULE 100008 — /etc/passwd or /etc/shadow Modified
+       ATT&CK: T1098 - Account Manipulation
+       Direct edits to passwd/shadow outside of useradd are rare
+       and should always be investigated.
+  ============================================================ -->
+  <rule id="100008" level="12">
+    <if_sid>550</if_sid>
+    <match>/etc/passwd|/etc/shadow</match>
+    <description>Critical file modified: $(file) — potential account manipulation</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+    <group>account_management,file_integrity,pci_dss_10.2.7,</group>
+  </rule>
+
+
+  <!-- ============================================================
+       RULE 100009 — Web Directory File Write (Potential Webshell)
+       ATT&CK: T1505.003 - Server Software Component: Web Shell
+       Fires when a new file is created inside common web roots.
+       A webshell write is a critical indicator of compromise.
+  ============================================================ -->
+  <rule id="100009" level="14">
+    <if_sid>554</if_sid>
+    <match>/var/www/|/srv/www/|/usr/share/nginx/html/</match>
+    <description>New file written to web directory: $(file) — possible webshell</description>
+    <mitre>
+      <id>T1505.003</id>
+    </mitre>
+    <group>web,file_integrity,pci_dss_6.5,</group>
+  </rule>
+
+
+  <!-- ============================================================
+       RULE 100010 — Repeated Authentication Failures (Any Service)
+       ATT&CK: T1110 - Brute Force
+       Broader catch-all for brute force across all PAM services
+       (FTP, SMTP auth, sudo, etc.), not just SSH.
+  ============================================================ -->
+  <rule id="100010" level="10" frequency="8" timeframe="120">
+    <if_matched_sid>5503</if_matched_sid>
+    <same_source_ip />
+    <description>Multiple authentication failures from $(srcip) — possible brute force on non-SSH service</description>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+    <group>authentication_failures,brute_force,pci_dss_10.2.4,</group>
+  </rule>
+
+</group>
