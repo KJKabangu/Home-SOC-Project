@@ -4,11 +4,16 @@
 
   <EventFiltering>
 
-    <!-- Process Creation -->
-    <ProcessCreate onmatch="include" />
+    <!-- Process Creation — only PowerShell to reduce volume -->
+    <ProcessCreate onmatch="include">
+      <Image condition="contains">powershell.exe</Image>
+    </ProcessCreate>
 
-    <!-- Network Connections -->
-    <NetworkConnect onmatch="include" />
+    <!-- Network Connections — flag common C2/reverse-shell ports -->
+    <NetworkConnect onmatch="include">
+      <DestinationPort condition="is">4444</DestinationPort>
+      <DestinationPort condition="is">1337</DestinationPort>
+    </NetworkConnect>
 
     <!-- File Creation -->
     <FileCreate onmatch="include" />
@@ -22,25 +27,10 @@
     <!-- DNS Queries -->
     <DnsQuery onmatch="include" />
 
-    <Image condition="contains">powershell.exe</Image>
-
-    <TargetImage condition="is">
-        C:\Windows\System32\lsass.exe
-    </TargetImage>
-
-
-    <NetworkConnect onmatch="include">
-    <DestinationPort condition="is">4444</DestinationPort>
-    <DestinationPort condition="is">1337</DestinationPort>
-    </NetworkConnect>
-
-    <RegistryEvent onmatch="include">
-    <TargetObject condition="contains">
-    </TargetObject>
-    </RegistryEvent>
-
-    <!-- Process Access -->
-    <ProcessAccess onmatch="include" />
+    <!-- Process Access — LSASS credential dumping (T1003.001) -->
+    <ProcessAccess onmatch="include">
+      <TargetImage condition="is">C:\Windows\System32\lsass.exe</TargetImage>
+    </ProcessAccess>
 
   </EventFiltering>
 

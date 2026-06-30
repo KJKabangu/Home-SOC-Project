@@ -1,5 +1,5 @@
 <group name="windows,security_cleaning,">
-  <rule id="100002" level="12">
+  <rule id="100020" level="12">
     <if_sid>60000</if_sid>
     <field name="win.system.providerName">Microsoft-Windows-Eventlog</field>
     <id>1102</id>

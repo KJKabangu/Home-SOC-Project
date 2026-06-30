@@ -94,8 +94,17 @@ preflight() {
     [[ -z "$MANAGER_IP" ]] && error "--manager is required."
     [[ -z "$AGENT_NAME" ]] && error "--name is required."
 
-    # Validate IP format
-    if ! echo "$MANAGER_IP" | grep -qE '^([0-9]{1,3}\.){3}[0-9]{1,3}$'; then
+    # Validate IP format and octet range (0-255)
+    valid_ip() {
+      local ip="$1" IFS='.'
+      read -ra octets <<< "$ip"
+      [[ ${#octets[@]} -eq 4 ]] || return 1
+      for octet in "${octets[@]}"; do
+        [[ "$octet" =~ ^[0-9]+$ ]] || return 1
+        (( octet >= 0 && octet <= 255 )) || return 1
+      done
+    }
+    if ! valid_ip "$MANAGER_IP"; then
       error "Invalid IP address: $MANAGER_IP"
     fi
 
@@ -259,7 +268,10 @@ start_agent() {
   systemctl enable wazuh-agent
   systemctl start wazuh-agent
 
-  sleep 3  # give the service a moment to connect
+  local retries=10
+  until systemctl is-active --quiet wazuh-agent || (( --retries == 0 )); do
+    sleep 2
+  done
 
   if systemctl is-active --quiet wazuh-agent; then
     success "wazuh-agent is running."

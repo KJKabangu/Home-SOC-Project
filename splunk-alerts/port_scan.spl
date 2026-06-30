@@ -1,3 +1,4 @@
-index=main sourcetype=syslog
-| stats dc(dest_port) as ports_scanned by src_ip
+index=main sourcetype=syslog earliest=-1h
+| bin _time span=10m
+| stats dc(dest_port) as ports_scanned by src_ip, _time
 | where ports_scanned > 20

@@ -1,4 +1,4 @@
-index=main sourcetype=linux_secure
+index=main sourcetype=linux_secure earliest=-1h
 ("Failed password" OR "Accepted password")
 | stats count(eval(searchmatch("Failed password"))) as failures
         count(eval(searchmatch("Accepted password"))) as successes
