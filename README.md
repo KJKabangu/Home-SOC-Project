@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 🛡️ Home Security Operations Center (SOC)
 
 A hands-on home lab simulating a real-world Security Operations Center using open-source tooling. This project demonstrates log ingestion, threat detection, alerting, and incident response across a personal network — skills directly applicable to SOC Analyst, Security Engineer, and Blue Team roles.
